@@ -1,14 +1,12 @@
 #
-# This is a Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
+# This is a Shiny web application for playing Wordle
 #
-# Find out more about building applications with Shiny here:
 #
-#    http://shiny.rstudio.com/
+# https://www.r-bloggers.com/2022/01/playing-wordle-in-r/
 #
 
 library(shiny)
-load("words.Rdata")
+load("~/Documents/RProjects/woRdle/words.Rdata")
 set.seed(as.numeric(Sys.Date()))
 # sets a new seed each day, so the word changes each day
 word <- sample(mystery_words,1)
@@ -17,28 +15,24 @@ word <- sample(mystery_words,1)
 # Define UI for application that draws a histogram
 ui <- fluidPage(
 
-    # Application title
-    titlePanel("Old Faithful Geyser Data"),
-
-    # Sidebar with a slider input for number of bins 
-    sidebarLayout(
-        sidebarPanel(
-            sliderInput("bins",
-                        "Number of bins:",
-                        min = 1,
-                        max = 50,
-                        value = 30)
-        ),
-
-        # Show a plot of the generated distribution
-        mainPanel(
-           plotOutput("distPlot")
-        )
-    )
+  # first set of 5 boxes for guess entry
+  textInput("g1","First Guess:"),
+  actionButton("click","Guess!")
+  # dynamically add a row of boxes each time they submit a guess
+  
+  
 )
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
+  # error checking
+  # check for guess in guessable list
+  # this handles anything that isn't 5 characters as well
+  
+  
+  # check for duplicate guesses (same word as previous)
+  
+  
 
     output$distPlot <- renderPlot({
         # generate bins based on input$bins from ui.R
