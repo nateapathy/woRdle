@@ -9,6 +9,11 @@
 
 library(shiny)
 load("words.Rdata")
+set.seed(as.numeric(Sys.Date()))
+# sets a new seed each day, so the word changes each day
+word <- sample(mystery_words,1)
+# selects a random word as the word for the day
+
 # Define UI for application that draws a histogram
 ui <- fluidPage(
 
