@@ -20,7 +20,7 @@ word_df <- tibble(gno=0,
 # Define UI for application
 ui <- fluidPage(
   textInput("g","Your Guess:"),
-  actionButton("click","Guess!"),
+  actionButton("guess","Guess!"),
   # dynamically add a row of boxes each time they submit a guess
   plotOutput("resplot",width = "400px")
 )
@@ -29,7 +29,7 @@ ui <- fluidPage(
 server <- function(input, output) {
   prev_guesses <- as.character()
   
-  g1 <- reactive(
+  g1 <- eventReactive(input$guess,
     {
       validate(need(toupper(input$g) %in% guessable_words,
                "Oops! That's not in the list of guessable words!")
@@ -41,10 +41,9 @@ server <- function(input, output) {
     }
   )
 
-  g1eval <- reactive(strsplit(g1,"")[[1]] == ltrs)
+  g1eval <- eventReactive(strsplit(g1,"")[[1]] == ltrs)
   
-  gdf <- reactive(
-    
+  gdf <- eventReactive(input$guess, {
     word_df %>%
       bind_rows(tibble(gno=1,
                        g=g1,
@@ -56,20 +55,24 @@ server <- function(input, output) {
              acc=case_when(cor==T~2,
                            cor==F&inword==T~1,
                            TRUE~0))
-  )
+    }
+    )
 
   
   # check for max guesses (n=6), do not eval if they've already guessed 6 valid guesses
 
-    output$resplot <- gdf %>%
-      filter(gno!=0) %>%
-      mutate(gord=factor(gno,levels = rev(unique(gno)))) %>%
-      ggplot(aes(x=lno,y=gord,fill=factor(acc),label=ltr)) +
-      geom_tile(color="black",size=2) +
-      geom_text(size=10) +
-      scale_fill_manual(values=c("grey","yellow","green")) +
-      theme_void() +
-      theme(legend.position = "none")
+    output$resplot <- renderPlot({
+      gdf %>%
+        filter(gno!=0) %>%
+        mutate(gord=factor(gno,levels = rev(unique(gno)))) %>%
+        ggplot(aes(x=lno,y=gord,fill=factor(acc),label=ltr)) +
+        geom_tile(color="black",size=2) +
+        geom_text(size=10) +
+        scale_fill_manual(values=c("grey","yellow","green")) +
+        theme_void() +
+        theme(legend.position = "none") 
+    }
+    )
 }
 
 # Run the application 
