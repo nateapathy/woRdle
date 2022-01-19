@@ -1,47 +1,75 @@
 #
 # This is a Shiny web application for playing Wordle
-#
-#
 # https://www.r-bloggers.com/2022/01/playing-wordle-in-r/
 #
 
 library(shiny)
+library(tidyverse)
 load("~/Documents/RProjects/woRdle/words.Rdata")
 set.seed(as.numeric(Sys.Date()))
 # sets a new seed each day, so the word changes each day
 word <- sample(mystery_words,1)
+ltrs <- strsplit(word,"")[[1]]
+word_df <- tibble(gno=0,
+                  g=word,
+                  lno=c(1:5),
+                  ltr=ltrs,
+                  cor=TRUE)
 # selects a random word as the word for the day
 
-# Define UI for application that draws a histogram
+# Define UI for application
 ui <- fluidPage(
-
-  # first set of 5 boxes for guess entry
-  textInput("g1","First Guess:"),
-  actionButton("click","Guess!")
+  textInput("g","Your Guess:"),
+  actionButton("click","Guess!"),
   # dynamically add a row of boxes each time they submit a guess
-  
-  
+  plotOutput("resplot",width = "400px")
 )
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
-  # error checking
-  # check for guess in guessable list
-  # this handles anything that isn't 5 characters as well
+  prev_guesses <- as.character()
   
-  
-  # check for duplicate guesses (same word as previous)
-  
-  
+  g1 <- reactive(
+    {
+      validate(need(toupper(input$g) %in% guessable_words,
+               "Oops! That's not in the list of guessable words!")
+               )
+      validate(need(!toupper(input$g) %in% prev_guesses,
+                    "Looks like you already guessed that word!")
+               )
+      toupper(input$g)
+    }
+  )
 
-    output$distPlot <- renderPlot({
-        # generate bins based on input$bins from ui.R
-        x    <- faithful[, 2]
-        bins <- seq(min(x), max(x), length.out = input$bins + 1)
+  g1eval <- reactive(strsplit(g1,"")[[1]] == ltrs)
+  
+  gdf <- reactive(
+    
+    word_df %>%
+      bind_rows(tibble(gno=1,
+                       g=g1,
+                       lno=c(1:5),
+                       ltr=strsplit(g1,"")[[1]],
+                       cor=g1eval)) %>%
+      mutate(inword=case_when(ltr %in% ltrs~TRUE,
+                              TRUE~FALSE),
+             acc=case_when(cor==T~2,
+                           cor==F&inword==T~1,
+                           TRUE~0))
+  )
 
-        # draw the histogram with the specified number of bins
-        hist(x, breaks = bins, col = 'darkgray', border = 'white')
-    })
+  
+  # check for max guesses (n=6), do not eval if they've already guessed 6 valid guesses
+
+    output$resplot <- gdf %>%
+      filter(gno!=0) %>%
+      mutate(gord=factor(gno,levels = rev(unique(gno)))) %>%
+      ggplot(aes(x=lno,y=gord,fill=factor(acc),label=ltr)) +
+      geom_tile(color="black",size=2) +
+      geom_text(size=10) +
+      scale_fill_manual(values=c("grey","yellow","green")) +
+      theme_void() +
+      theme(legend.position = "none")
 }
 
 # Run the application 
