@@ -16,20 +16,44 @@ word_df <- tibble(gno=0,
                   ltr=ltrs,
                   cor=TRUE)
 # selects a random word as the word for the day
+base_df <- tibble(gno=1,
+                  g="XXXXX",
+                  lno=c(1:5),
+                  ltr=NA,
+                  cor=NA,
+                  acc=0) %>%
+  arrange(gno,lno)
+
+base_plot <- base_df %>%
+  filter(gno!=0) %>%
+  mutate(gord=factor(gno,levels = rev(unique(gno)))) %>%
+  ggplot(aes(x=lno,y=gord,fill=factor(acc),label=ltr)) +
+  geom_tile(color="black",size=2) +
+  geom_text(size=10) +
+  scale_fill_manual(values=c("grey","yellow","green")) +
+  theme_void() +
+  theme(legend.position = "none")
+
+gnum <- 0 # initialize guess number
 
 # Define UI for application
-ui <- fluidPage(
+ui <- fluidPage(align="center",
   textInput("g","Your Guess:"),
   actionButton("guess","Guess!"),
+  textOutput("err"),
   # dynamically add a row of boxes each time they submit a guess
   plotOutput("resplot",width = "400px")
 )
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
-  prev_guesses <- as.character()
+  #g <- observeEvent(input$guess,input$g)
+  #prev_guesses <- as.character(g)
+  #append(prev_guesses,g)
+  #print(prev_guesses)
+  #gnum <- eventReactive({input$guess})
   
-  g1 <- eventReactive(input$guess,
+  output$err <- eventReactive(input$guess,
     {
       validate(need(toupper(input$g) %in% guessable_words,
                "Oops! That's not in the list of guessable words!")
@@ -40,39 +64,39 @@ server <- function(input, output) {
       toupper(input$g)
     }
   )
-
-  g1eval <- eventReactive(strsplit(g1,"")[[1]] == ltrs)
   
-  gdf <- eventReactive(input$guess, {
-    word_df %>%
-      bind_rows(tibble(gno=1,
-                       g=g1,
-                       lno=c(1:5),
-                       ltr=strsplit(g1,"")[[1]],
-                       cor=g1eval)) %>%
-      mutate(inword=case_when(ltr %in% ltrs~TRUE,
-                              TRUE~FALSE),
-             acc=case_when(cor==T~2,
-                           cor==F&inword==T~1,
-                           TRUE~0))
+  output$resplot <- renderPlot({
+    if (gnum==0) { 
+      {
+        base_plot
+        }
     }
-    )
+    if (gnum==1) {
+      
+    }
+    if (gnum==2) {
+      
+    }
+    if (gnum==3) {
+      
+    }
+    if (gnum==4) {
+      
+    }
+    if (gnum==5) {
+      
+    }
+    if (gnum==6) {
+      
+    }
+    if (gnum>6) {
+      base_plot +
+        geom_text(aes(x=3,y=3,label="Sorry! No more guesses!"))
+    }
+    })
 
-  
   # check for max guesses (n=6), do not eval if they've already guessed 6 valid guesses
 
-    output$resplot <- renderPlot({
-      gdf %>%
-        filter(gno!=0) %>%
-        mutate(gord=factor(gno,levels = rev(unique(gno)))) %>%
-        ggplot(aes(x=lno,y=gord,fill=factor(acc),label=ltr)) +
-        geom_tile(color="black",size=2) +
-        geom_text(size=10) +
-        scale_fill_manual(values=c("grey","yellow","green")) +
-        theme_void() +
-        theme(legend.position = "none") 
-    }
-    )
 }
 
 # Run the application 
