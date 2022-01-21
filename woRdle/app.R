@@ -2,7 +2,6 @@
 # This is a Shiny web application for playing Wordle
 # https://www.r-bloggers.com/2022/01/playing-wordle-in-r/
 #
-
 library(shiny)
 library(tidyverse)
 load("~/Documents/RProjects/woRdle/words.Rdata")
@@ -15,88 +14,61 @@ word_df <- tibble(gno=0,
                   lno=c(1:5),
                   ltr=ltrs,
                   cor=TRUE)
-# selects a random word as the word for the day
-base_df <- tibble(gno=1,
-                  g="XXXXX",
-                  lno=c(1:5),
-                  ltr=NA,
-                  cor=NA,
-                  acc=0) %>%
-  arrange(gno,lno)
-
-base_plot <- base_df %>%
-  filter(gno!=0) %>%
-  mutate(gord=factor(gno,levels = rev(unique(gno)))) %>%
-  ggplot(aes(x=lno,y=gord,fill=factor(acc),label=ltr)) +
-  geom_tile(color="black",size=2) +
-  geom_text(size=10) +
-  scale_fill_manual(values=c("grey","yellow","green")) +
-  theme_void() +
-  theme(legend.position = "none")
-
-gnum <- 0 # initialize guess number
 
 # Define UI for application
 ui <- fluidPage(align="center",
-  textInput("g","Your Guess:"),
+  textInput("guess_in","Your Guess:"),
   actionButton("guess","Guess!"),
-  textOutput("err"),
+  textOutput("guess_out"),
   # dynamically add a row of boxes each time they submit a guess
   plotOutput("resplot",width = "400px")
 )
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
-  #g <- observeEvent(input$guess,input$g)
-  #prev_guesses <- as.character(g)
-  #append(prev_guesses,g)
-  #print(prev_guesses)
-  #gnum <- eventReactive({input$guess})
+  all_guesses <- eventReactive(input$guess==1,{
+    as.character()
+  })
+  all_guesses <- eventReactive(input$guess>1,{
+      append(all_guesses,toupper(input$guess_in))
+  })
   
-  output$err <- eventReactive(input$guess,
-    {
-      validate(need(toupper(input$g) %in% guessable_words,
-               "Oops! That's not in the list of guessable words!")
-               )
-      validate(need(!toupper(input$g) %in% prev_guesses,
-                    "Looks like you already guessed that word!")
-               )
-      toupper(input$g)
-    }
-  )
+  guesscheck <- eventReactive(input$guess,{
+    # when they hit guess, store the guess
+    g <- toupper(input$guess_in)
+    # then check if its legit
+    validate(need(g %in% guessable_words,
+                  "Oops! That's not in the list of guessable words! (or you already guessed that)")
+    )
+    g
+  })
+  
+  output$guess_out <- renderText({
+    guesscheck()
+  })
+  
+  guessdata <- eventReactive(input$guess,{
+    tibble(gno=0,
+           g=word,
+           lno=c(1:5),
+           ltr=NA,
+           cor=NA,
+           acc=2) %>%
+      arrange(gno,lno)
+  })
   
   output$resplot <- renderPlot({
-    if (gnum==0) { 
-      {
-        base_plot
-        }
-    }
-    if (gnum==1) {
-      
-    }
-    if (gnum==2) {
-      
-    }
-    if (gnum==3) {
-      
-    }
-    if (gnum==4) {
-      
-    }
-    if (gnum==5) {
-      
-    }
-    if (gnum==6) {
-      
-    }
-    if (gnum>6) {
-      base_plot +
-        geom_text(aes(x=3,y=3,label="Sorry! No more guesses!"))
-    }
+    guessdata() %>%
+      #filter(gno!=0) %>%
+      mutate(gord=factor(gno,levels = rev(unique(gno)))) %>%
+      ggplot(aes(x=lno,y=gord,fill=factor(acc),label=ltr)) +
+      geom_tile(color="black",size=2) +
+      geom_text(size=10) +
+      scale_fill_manual(values=c("grey","yellow","green")) +
+      theme_void() +
+      theme(legend.position = "none")
     })
-
   # check for max guesses (n=6), do not eval if they've already guessed 6 valid guesses
-
 }
 
 # Run the application 
