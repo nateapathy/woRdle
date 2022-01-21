@@ -48,13 +48,8 @@ server <- function(input, output) {
   })
   
   guessdata <- eventReactive(input$guess,{
-    tibble(gno=0,
-           g=word,
-           lno=c(1:5),
-           ltr=NA,
-           cor=NA,
-           acc=2) %>%
-      arrange(gno,lno)
+    g <- toupper(input$guess_in)
+    # only update data if it's a new legit guess
   })
   
   output$resplot <- renderPlot({
