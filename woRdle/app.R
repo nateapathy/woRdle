@@ -9,11 +9,10 @@ set.seed(as.numeric(Sys.Date()))
 # sets a new seed each day, so the word changes each day
 word <- sample(mystery_words,1)
 ltrs <- strsplit(word,"")[[1]]
-word_df <- tibble(gno=0,
-                  g=word,
-                  lno=c(1:5),
-                  ltr=ltrs,
-                  cor=TRUE)
+gdf <- tibble(g=word,
+              lno=c(1:5),
+              ltr=ltrs,
+              cor=TRUE)
 
 # Define UI for application
 ui <- fluidPage(align="center",
@@ -21,7 +20,7 @@ ui <- fluidPage(align="center",
   actionButton("guess","Guess!"),
   textOutput("guess_out"),
   # dynamically add a row of boxes each time they submit a guess
-  plotOutput("resplot",width = "400px")
+  plotOutput("resplot",width = "400px",height = "100px")
 )
 
 # Define server logic required to draw a histogram
@@ -48,14 +47,29 @@ server <- function(input, output) {
   })
   
   guessdata <- eventReactive(input$guess,{
-    g <- toupper(input$guess_in)
+    
+    gdf %>% bind_rows(
+      tibble(g=toupper(input$guess_in),
+             lno=c(1:5)) %>%
+        mutate(ltr=strsplit(g,"")[[1]],
+               cor=ltr==ltrs,
+               inword=case_when(ltr %in% ltrs~TRUE,
+                                TRUE~FALSE),
+               acc=case_when(cor==T~2,
+                             cor==F&inword==T~1,
+                             TRUE~0))
+    ) -> gdf
+    
+    gdf
     # only update data if it's a new legit guess
   })
   
   output$resplot <- renderPlot({
     guessdata() %>%
-      #filter(gno!=0) %>%
-      mutate(gord=factor(gno,levels = rev(unique(gno)))) %>%
+      group_by(g) %>%
+      filter(g!=word) %>%
+      mutate(gno=as.numeric(factor(g)),
+             gord=factor(gno,levels = rev(unique(gno)))) %>%
       ggplot(aes(x=lno,y=gord,fill=factor(acc),label=ltr)) +
       geom_tile(color="black",size=2) +
       geom_text(size=10) +
